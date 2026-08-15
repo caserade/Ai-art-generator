@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -31,18 +32,35 @@ app.get('/api/state', (_req, res) => {
   res.json(publicStatus(state))
 })
 
+function resolveTunnelUrl(fallback) {
+  if (process.env.GOSPEL_TUNNEL_URL) return process.env.GOSPEL_TUNNEL_URL
+  try {
+    const tunnelFile = path.join(
+      process.env.GOSPEL_DATA_DIR || path.join(__dirname, '..', 'data'),
+      'tunnel.url',
+    )
+    const raw = fs.readFileSync(tunnelFile, 'utf8').trim()
+    if (raw.startsWith('http')) return raw
+  } catch {
+    // no tunnel file yet
+  }
+  return fallback
+}
+
 app.get('/api/bridge', (req, res) => {
   const host = req.get('host') || `localhost:${PORT}`
   const proto = req.protocol || 'http'
   const base = `${proto}://${host}`
+  const tunnelUrl = resolveTunnelUrl(base)
   res.json({
     ok: true,
     httpPort: PORT,
     httpsPort: Number(process.env.HTTPS_PORT || 8789),
-    httpsReady: proto === 'https',
+    httpsReady: proto === 'https' || tunnelUrl.startsWith('https://'),
     httpUrl: `http://${host}/`,
     httpsUrl: proto === 'https' ? `${base}/` : `https://${host}/`,
-    tunnelUrl: process.env.GOSPEL_TUNNEL_URL || base,
+    tunnelUrl,
+    pairingHint: `${tunnelUrl}/?s=…`,
     appName,
   })
 })
