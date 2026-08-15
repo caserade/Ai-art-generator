@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0d0c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Gospel Command" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/gospel-kaiju.png" />
+    <title>WWW Gospel Command</title>
+    <style>
+      :root {
+        --bg: #0b0d0c;
+        --neon: #39ff14;
+        --halo: #ffe566;
+        --cream: #e8f0e4;
+        --muted: #8aa08a;
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background:
+          radial-gradient(ellipse 70% 50% at 50% 0%, rgba(57,255,20,0.14), transparent 55%),
+          var(--bg);
+        color: var(--cream);
+      }
+      main { max-width: 440px; margin: 0 auto; padding: 1.25rem 1rem 2.5rem; }
+      h1 { margin: 0.15rem 0 0.35rem; color: var(--neon); letter-spacing: 0.05em; font-size: 1.55rem; }
+      .kicker { color: var(--halo); letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.7rem; }
+      p { line-height: 1.45; color: var(--muted); }
+      button, .file-btn, a.go {
+        width: 100%;
+        border: none;
+        border-radius: 14px;
+        padding: 0.95rem 1rem;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 0.55rem;
+      }
+      .go { background: linear-gradient(135deg, var(--neon), #1f8a12); color: #070807; }
+      a.go { display: block; text-align: center; text-decoration: none; }
+      .go:disabled { opacity: 0.5; }
+      .ghost { background: transparent; color: var(--cream); border: 1px solid rgba(232,240,228,0.25); }
+      .finger {
+        width: 100px; height: 100px; margin: 0.9rem auto;
+        border-radius: 50%; border: 3px solid var(--neon);
+        box-shadow: 0 0 24px rgba(57,255,20,0.35);
+        display: grid; place-items: center; font-size: 2.6rem;
+        animation: pulse 1.8s ease-in-out infinite;
+      }
+      @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      .status, .card {
+        padding: 0.75rem; border-radius: 12px;
+        border: 1px solid rgba(57,255,20,0.2);
+        background: rgba(0,0,0,0.28); margin-top: 0.7rem;
+      }
+      .status.ok { color: var(--neon); }
+      .status.bad { color: #ff8a8a; }
+      .mods { list-style: none; padding: 0; margin: 0.4rem 0 0; }
+      .mods li {
+        border: 1px solid rgba(57,255,20,0.18);
+        border-radius: 10px; padding: 0.55rem 0.7rem; margin-top: 0.4rem;
+      }
+      .mods strong { color: var(--halo); }
+      .mods span { display: block; color: var(--muted); font-size: 0.8rem; }
+      label { display: block; margin-top: 0.55rem; font-size: 0.82rem; color: var(--muted); }
+      input, select, textarea {
+        width: 100%; margin-top: 0.25rem; border-radius: 10px; border: 1px solid rgba(57,255,20,0.25);
+        background: rgba(0,0,0,0.35); color: var(--cream); padding: 0.65rem 0.75rem; font: inherit;
+      }
+      .portrait { width: 72px; height: 72px; object-fit: contain; display: block; margin: 0.4rem 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="kicker">Phone command</p>
+      <h1>WWW GOSPEL COMMAND</h1>
+      <img class="portrait" src="/gospel-kaiju.png" alt="Gospel Kaiju" />
+      <p>Open this in your phone browser — no Play Store install. Gospel finds this phone, then you scan YOUR fingerprint. Gospel cannot see your operator seal.</p>
+      <div class="finger" aria-hidden="true">🔏</div>
+      <p id="mode" class="status">Connecting to Gospel…</p>
+      <button class="go" id="scan" disabled>Use fingerprint module</button>
+      <button class="ghost" id="install" hidden>Add to Home Screen (optional)</button>
+      <button class="ghost" id="refresh">Refresh / find PC</button>
+
+      <div class="card">
+        <strong>Modules</strong>
+        <ul class="mods" id="mods"></ul>
+        <label>Upload module name
+          <input id="modName" placeholder="My fingerprint pack" />
+        </label>
+        <label>Kind
+          <select id="modKind">
+            <option value="fingerprint-scan">fingerprint-scan</option>
+            <option value="phone-find">phone-find</option>
+            <option value="phonelink-bridge">phonelink-bridge</option>
+          </select>
+        </label>
+        <label>Description
+          <textarea id="modDesc" rows="2" placeholder="What this module does"></textarea>
+        </label>
+        <button class="ghost" id="upload">Upload module</button>
+      </div>
+    </main>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {})
+      }
+
+      const mode = document.getElementById('mode')
+      const scanBtn = document.getElementById('scan')
+      const refreshBtn = document.getElementById('refresh')
+      const installBtn = document.getElementById('install')
+      const modsEl = document.getElementById('mods')
+      let deferredPrompt = null
+
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault()
+        deferredPrompt = event
+        installBtn.hidden = false
+      })
+
+      function b64urlToBuf(value) {
+        const pad = value.replace(/-/g, '+').replace(/_/g, '/')
+        const padded = pad + '='.repeat((4 - (pad.length % 4)) % 4)
+        const binary = atob(padded)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+        return bytes.buffer
+      }
+      function bufToB64url(buffer) {
+        const bytes = new Uint8Array(buffer)
+        let binary = ''
+        for (const b of bytes) binary += String.fromCharCode(b)
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+      }
+      function pairingSecret() {
+        let secret = ''
+        try {
+          const params = new URLSearchParams(location.search)
+          if (params.get('s')) secret = params.get('s')
+        } catch {}
+        if (!secret && location.hash.startsWith('#s=')) secret = decodeURIComponent(location.hash.slice(3))
+        if (!secret) secret = localStorage.getItem('gospelPairing') || ''
+        if (secret) {
+          localStorage.setItem('gospelPairing', secret)
+          history.replaceState(null, '', location.pathname)
+        }
+        return secret
+      }
+      function setStatus(text, cls) {
+        mode.textContent = text
+        mode.className = 'status ' + (cls || '')
+      }
+      async function api(path, options) {
+        const res = await fetch(path, options)
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status))
+        return data
+      }
+      async function loadModules() {
+        try {
+          const data = await api('/api/modules')
+          modsEl.innerHTML = (data.modules || []).map((m) => (
+            '<li><strong>' + m.name + '</strong><span>' + m.kind + (m.builtin ? ' · built-in' : ' · uploaded') + ' — ' + m.description + '</span></li>'
+          )).join('')
+        } catch (err) {
+          modsEl.innerHTML = '<li class="bad">' + (err.message || err) + '</li>'
+        }
+      }
+      async function boot() {
+        const secret = pairingSecret()
+        await loadModules()
+        try {
+          const state = await api('/api/state')
+          const link = state.link && state.link.connected ? ' Phone Link connected.' : ''
+          if (state.unlocked) {
+            setStatus('PC is unlocked. You can close WWW Gospel Command.' + link, 'ok')
+            scanBtn.disabled = true
+            return
+          }
+          if (!secret) {
+            setStatus('Open Gospel’s pairing link so the secret is saved.' + link, 'bad')
+          }
+          if (!window.isSecureContext) {
+            setStatus('Fingerprint needs HTTPS or http://localhost (not a plain LAN IP).' + link, 'bad')
+            scanBtn.disabled = true
+            return
+          }
+          // Chrome accepts WebAuthn RP ID "localhost" but rejects bare 127.0.0.1.
+          if (location.hostname === '127.0.0.1') {
+            const local = location.href.replace('://127.0.0.1', '://localhost')
+            setStatus('Open via localhost for fingerprint: ' + local, 'bad')
+            scanBtn.disabled = true
+            scanBtn.textContent = 'Use http://localhost (not 127.0.0.1)'
+            return
+          }
+          scanBtn.disabled = false
+          if (!state.phoneEnrolled) {
+            setStatus('First time: tap the button and scan YOUR fingerprint to bind this phone.' + link, '')
+            scanBtn.textContent = 'Bind fingerprint module'
+            scanBtn.dataset.mode = 'enroll'
+          } else {
+            setStatus('Gospel is looking for this phone. Tap and scan YOUR fingerprint.' + link, '')
+            scanBtn.textContent = 'Unlock with fingerprint module'
+            scanBtn.dataset.mode = 'unlock'
+          }
+        } catch (err) {
+          setStatus((err.message || String(err)) + ' Is Gospel running?', 'bad')
+        }
+      }
+      async function enroll() {
+        const secret = pairingSecret()
+        if (!secret) throw new Error('Pair from Gospel’s QR first.')
+        const ch = await api('/api/challenge')
+        const opts = ch.options
+        const cred = await navigator.credentials.create({
+          publicKey: {
+            challenge: b64urlToBuf(opts.challenge),
+            rp: opts.rp,
+            user: {
+              id: b64urlToBuf(opts.user.id),
+              name: opts.user.name,
+              displayName: opts.user.displayName,
+            },
+            pubKeyCredParams: opts.pubKeyCredParams,
+            authenticatorSelection: opts.authenticatorSelection,
+            timeout: opts.timeout || 60000,
+            attestation: opts.attestation || 'none',
+          },
+        })
+        if (!cred) throw new Error('Fingerprint cancelled.')
+        localStorage.setItem('gospelCred', cred.id)
+        return api('/api/enroll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pairingSecret: secret,
+            challenge: opts.challenge,
+            id: cred.id,
+            rawId: bufToB64url(cred.rawId),
+            type: cred.type,
+            response: {
+              clientDataJSON: bufToB64url(cred.response.clientDataJSON),
+              attestationObject: bufToB64url(cred.response.attestationObject),
+              transports: cred.response.getTransports ? cred.response.getTransports() : [],
+            },
+          }),
+        })
+      }
+      async function unlock() {
+        const secret = pairingSecret()
+        if (!secret) throw new Error('Bind fingerprint from Gospel’s QR first.')
+        const ch = await api('/api/challenge')
+        const opts = ch.options
+        const allow = (opts.allowCredentials || []).map((c) => ({
+          type: 'public-key',
+          id: b64urlToBuf(c.id),
+          transports: c.transports,
+        }))
+        const assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge: b64urlToBuf(opts.challenge),
+            rpId: opts.rpId,
+            allowCredentials: allow,
+            userVerification: 'required',
+            timeout: opts.timeout || 60000,
+          },
+        })
+        if (!assertion) throw new Error('Fingerprint cancelled.')
+        return api('/api/unlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pairingSecret: secret,
+            challenge: opts.challenge,
+            id: assertion.id,
+            rawId: bufToB64url(assertion.rawId),
+            type: assertion.type,
+            response: {
+              clientDataJSON: bufToB64url(assertion.response.clientDataJSON),
+              authenticatorData: bufToB64url(assertion.response.authenticatorData),
+              signature: bufToB64url(assertion.response.signature),
+              userHandle: assertion.response.userHandle
+                ? bufToB64url(assertion.response.userHandle)
+                : undefined,
+            },
+          }),
+        })
+      }
+      scanBtn.addEventListener('click', async () => {
+        scanBtn.disabled = true
+        setStatus('Fingerprint module running…', '')
+        try {
+          const result = scanBtn.dataset.mode === 'enroll' ? await enroll() : await unlock()
+          setStatus(result.message || 'Done.', 'ok')
+        } catch (err) {
+          setStatus(err.message || String(err), 'bad')
+          scanBtn.disabled = false
+        }
+      })
+      refreshBtn.addEventListener('click', () => void boot())
+      installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt()
+          await deferredPrompt.userChoice
+          deferredPrompt = null
+          setStatus('Added. You can also keep using this page in the browser.', 'ok')
+          return
+        }
+        setStatus('No extra install needed. Keep this page open, or Add to Home Screen from the browser menu.', '')
+      })
+      document.getElementById('upload').addEventListener('click', async () => {
+        try {
+          const result = await api('/api/modules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: document.getElementById('modName').value,
+              kind: document.getElementById('modKind').value,
+              description: document.getElementById('modDesc').value,
+            }),
+          })
+          setStatus(result.message, 'ok')
+          await loadModules()
+        } catch (err) {
+          setStatus(err.message || String(err), 'bad')
+        }
+      })
+      void boot()
+    </script>
+  </body>
+</html>

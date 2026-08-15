@@ -1,0 +1,25 @@
+{
+  "name": "gospel-kaiju",
+  "version": "1.0.0",
+  "description": "WWW Gospel Command — phone fingerprint unlock bridge with hardened WebAuthn",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test tests/*.test.js",
+    "install:cloud": "npm ci"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/caserade/Ai-art-generator.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@simplewebauthn/server": "^13.3.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}
