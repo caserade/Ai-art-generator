@@ -170,7 +170,7 @@ if (process.env.GOSPEL_NO_LISTEN !== '1') {
     const rpHint = process.env.GOSPEL_RP_ID || 'localhost'
     console.log(`${appName} listening on http://0.0.0.0:${PORT}`)
     console.log(`Pairing secret: ${state.pairingSecret}`)
-    console.log(`Open: http://127.0.0.1:${PORT}/?s=${state.pairingSecret}#s=${state.pairingSecret}`)
+    console.log(`Open (WebAuthn): http://localhost:${PORT}/?s=${state.pairingSecret}#s=${state.pairingSecret}`)
     console.log(`RP ID default: ${rpHint} (override with GOSPEL_RP_ID)`)
   })
 }

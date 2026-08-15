@@ -59,8 +59,8 @@
         border: 1px solid rgba(57,255,20,0.2);
         background: rgba(0,0,0,0.28); margin-top: 0.7rem;
       }
-      .ok { color: var(--neon); }
-      .bad { color: #ff8a8a; }
+      .status.ok { color: var(--neon); }
+      .status.bad { color: #ff8a8a; }
       .mods { list-style: none; padding: 0; margin: 0.4rem 0 0; }
       .mods li {
         border: 1px solid rgba(57,255,20,0.18);
@@ -187,9 +187,17 @@
           if (!secret) {
             setStatus('Open Gospel’s pairing link so the secret is saved.' + link, 'bad')
           }
-          if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-            setStatus('Fingerprint needs HTTPS or localhost.' + link, 'bad')
+          if (!window.isSecureContext) {
+            setStatus('Fingerprint needs HTTPS or http://localhost (not a plain LAN IP).' + link, 'bad')
             scanBtn.disabled = true
+            return
+          }
+          // Chrome accepts WebAuthn RP ID "localhost" but rejects bare 127.0.0.1.
+          if (location.hostname === '127.0.0.1') {
+            const local = location.href.replace('://127.0.0.1', '://localhost')
+            setStatus('Open via localhost for fingerprint: ' + local, 'bad')
+            scanBtn.disabled = true
+            scanBtn.textContent = 'Use http://localhost (not 127.0.0.1)'
             return
           }
           scanBtn.disabled = false
