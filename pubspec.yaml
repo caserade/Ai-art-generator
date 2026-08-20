@@ -1,0 +1,51 @@
+name: mobile_game_maker
+description: Standalone Android Mobile Game Maker — design, scan art, and play 2D games with Flutter + Flame.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # Game engine
+  flame: ^1.30.1
+
+  # State
+  flutter_riverpod: ^2.6.1
+
+  # Local storage (SQLite) + paths
+  sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.3.5
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  shared_preferences: ^2.5.3
+
+  # Image capture & processing (WebP, edge detection, bg strip)
+  image: ^4.5.4
+  image_picker: ^1.1.2
+
+  # Controllers
+  gamepads: ^0.1.7
+
+  # Networking (OpenAI Vision)
+  http: ^1.4.0
+
+  # Utils
+  uuid: ^4.5.1
+  collection: ^1.19.1
+  meta: ^1.16.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/presets/
+    - assets/images/
