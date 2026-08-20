@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/game_models.dart';
 import '../../storage/database.dart';
 import '../../storage/webp_compressor.dart';
+import '../widgets/companion_overlay.dart';
 import 'art_scanner_screen.dart';
 import 'brain_chat_screen.dart';
 import 'editor_screen.dart';
@@ -23,6 +24,11 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keep Kaiju aware of the home screen context.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CompanionScope.of(context)?.setRoute('home');
+    });
+
     final projects = ref.watch(projectsProvider);
 
     return Scaffold(
@@ -55,6 +61,8 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   _HeroBanner(
                     onCreate: () => _createProject(context, ref),
+                    onAskKaiju: () =>
+                        CompanionScope.of(context)?.openPanel(),
                   ),
                   const SizedBox(height: 20),
                   Text(
@@ -219,9 +227,10 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _HeroBanner extends StatelessWidget {
-  const _HeroBanner({required this.onCreate});
+  const _HeroBanner({required this.onCreate, required this.onAskKaiju});
 
   final VoidCallback onCreate;
+  final VoidCallback onAskKaiju;
 
   @override
   Widget build(BuildContext context) {
@@ -239,16 +248,42 @@ class _HeroBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Mobile Game Maker',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFFFF8A50),
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/images/companion_kaiju.webp',
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
                 ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Game Maker',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFFFF8A50),
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Kaiju is ready — your always-on companion.',
+                      style: TextStyle(color: Colors.white70, height: 1.3),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           const Text(
-            'Scan art, talk to Free Brain / OpenAI MCP, parse maps, tune physics, and play with dual controls — on device.',
+            'Scan art, design with Free Brain / OpenAI, and play with dual controls — installed natively on your phone.',
             style: TextStyle(color: Colors.white70, height: 1.4),
           ),
           const SizedBox(height: 16),
@@ -262,11 +297,9 @@ class _HeroBanner extends StatelessWidget {
                 label: const Text('Create game'),
               ),
               OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BrainChatScreen()),
-                ),
-                icon: const Icon(Icons.psychology_alt_outlined),
-                label: const Text('Ask AI Brain'),
+                onPressed: onAskKaiju,
+                icon: const Icon(Icons.pets),
+                label: const Text('Ask Kaiju'),
               ),
             ],
           ),

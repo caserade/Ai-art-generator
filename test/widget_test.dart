@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_game_maker/app.dart';
@@ -9,13 +10,18 @@ void main() {
   setUp(() async {
     GameDatabase.instance.resetForTest();
     await GameDatabase.instance.init(forceMemory: true);
+    // Skip auto-welcome panel animation loops in tests
+    await GameDatabase.instance.setSetting('kaiju_welcomed', '1');
   });
 
-  testWidgets('Home shows Game Maker branding', (tester) async {
+  testWidgets('Home shows Game Maker branding and Kaiju', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: GameMakerApp()));
-    await tester.pumpAndSettle();
+    // Avoid pumpAndSettle — companion FAB pulse is a repeating animation.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+
     expect(find.textContaining('Game Maker'), findsWidgets);
-    expect(find.textContaining('Mobile Game Maker'), findsOneWidget);
+    expect(find.textContaining('Kaiju'), findsWidgets);
     expect(find.text('AI Brain'), findsOneWidget);
     expect(find.text('Art Scanner'), findsOneWidget);
     expect(find.text('Map Parser'), findsOneWidget);

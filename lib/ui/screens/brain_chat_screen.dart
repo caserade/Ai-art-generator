@@ -46,7 +46,7 @@ class _BrainChatScreenState extends State<BrainChatScreen> {
     setState(() {
       _messages.add(
         _ChatBubble(
-          text: 'Hi — I\'m ${FreeBrain.identity}\n'
+          text: 'Hi — I\'m Kaiju, your Game Maker companion.\n'
               'Mode: ${_brain.modeLabel}\n\n'
               'Try: “fast platformer with floaty double jump and gem collecting”',
           isUser: false,
