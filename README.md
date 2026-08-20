@@ -1,8 +1,8 @@
 # Mobile Game Maker
 
-Standalone Android **Mobile Game Maker** built with **Flutter + Flame**.
+Standalone **Mobile + PC Game Maker** built with **Flutter + Flame**.
 
-Create, design, scan art, parse level sketches with OpenAI Vision, tune physics from gameplay descriptions, and play 2D platformers on-device with dual virtual/physical controls.
+Create, design, scan art, parse level sketches with OpenAI Vision, tune physics, and play 2D platformers on **Android phone** or **Windows/Linux PC**.
 
 ## AI Brain
 
@@ -13,6 +13,13 @@ Create, design, scan art, parse level sketches with OpenAI Vision, tune physics 
 | **Hybrid** | Free Brain always on; OpenAI when an API key is set |
 
 MCP tools: `design_game`, `generate_level`, `tune_physics`, `suggest_art_pipeline`, `explain_mechanics`.
+
+## Platforms
+
+| Target | Guide |
+|--------|--------|
+| **Android phone** | [`INSTALL_ANDROID.md`](INSTALL_ANDROID.md) — APK sideload |
+| **Windows / Linux PC** | [`INSTALL_PC.md`](INSTALL_PC.md) — `flutter run -d windows` / `linux` |
 
 ## Modules
 
@@ -37,10 +44,9 @@ MCP tools: `design_game`, `generate_level`, `tune_physics`, `suggest_art_pipelin
 ```bash
 flutter pub get
 flutter test
-flutter run                 # device / emulator
-flutter build apk --release # native phone APK
+flutter run -d windows          # PC
+flutter run                     # phone / emulator
+flutter build apk --release     # Android APK
 ```
-
-See [`INSTALL_ANDROID.md`](INSTALL_ANDROID.md) to sideload onto your phone.
 
 Open **Settings** to pick Free / Hybrid / OpenAI and optionally paste an API key.
