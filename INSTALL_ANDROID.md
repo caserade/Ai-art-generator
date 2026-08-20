@@ -1,41 +1,33 @@
 # Install Game Maker on your Android phone
 
-This repo builds a **native Android app** (Flutter → APK), not a website wrapper.
+Native Flutter Android app with **Kaiju**, your always-on companion.
 
-## Quick install (APK)
+## Download & install
 
-1. Build (on a machine with Flutter + Android SDK):
+1. Get the APK:
+   - **Most phones (recommended):** `GameMaker-android-arm64.apk` (~23MB)
+   - **Universal:** `GameMaker-android-release.apk` (~40MB)
+2. On your phone: Settings → allow **Install unknown apps** for Files / Chrome
+3. Open the APK → **Install** → launch **Game Maker**
+
+Kaiju opens automatically on first launch (floating companion button bottom-right).
+
+Package: `com.gamemaker.mobile_game_maker`  
+Min Android: **7.0 (API 24)** · Version **1.1.0+3**
+
+## USB install
+
+```bash
+adb install -r GameMaker-android-arm64.apk
+# or
+flutter install --release
+```
+
+## Build yourself
 
 ```bash
 flutter pub get
-flutter build apk --release --target-platform android-arm64
+flutter build apk --release --split-per-abi --target-platform android-arm64
 ```
 
-2. Copy the APK to your phone:
-
-`build/app/outputs/flutter-apk/app-release.apk`
-
-3. On your phone:
-   - Settings → allow **Install unknown apps** for Files / Chrome
-   - Open the APK → **Install**
-   - Launch **Game Maker**
-
-Package id: `com.gamemaker.mobile_game_maker`  
-Min Android: **7.0 (API 24)** · Target: **API 35**
-
-## USB install (developer mode)
-
-```bash
-flutter devices
-flutter install --release
-# or
-adb install -r build/app/outputs/flutter-apk/app-release.apk
-```
-
-## App bundle (Play Store later)
-
-```bash
-flutter build appbundle --release
-```
-
-Replace the debug signing config in `android/app/build.gradle.kts` with your upload keystore before publishing.
+Output: `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
