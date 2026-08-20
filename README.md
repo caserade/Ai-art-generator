@@ -37,9 +37,10 @@ MCP tools: `design_game`, `generate_level`, `tune_physics`, `suggest_art_pipelin
 ```bash
 flutter pub get
 flutter test
-flutter run
+flutter run                 # device / emulator
+flutter build apk --release # native phone APK
 ```
 
-Open **Settings** to pick Free / Hybrid / OpenAI and optionally paste an API key.
+See [`INSTALL_ANDROID.md`](INSTALL_ANDROID.md) to sideload onto your phone.
 
-For Cursor Cloud agents: authenticate **Composio** in Desktop MCP settings to use OpenAI connectors remotely.
+Open **Settings** to pick Free / Hybrid / OpenAI and optionally paste an API key.
