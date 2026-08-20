@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,11 +31,22 @@ Future<void> main() async {
     }
   }
 
-  // Optional cloud brain key from --dart-define=OPENAI_API_KEY=...
-  const envKey = String.fromEnvironment('OPENAI_API_KEY');
-  if (envKey.isNotEmpty) {
-    await GameDatabase.instance.setSetting('openai_api_key', envKey);
-  }
+  await _seedOpenAiKeyFromEnvironment();
 
   runApp(const GameMakerApp());
+}
+
+/// Prefer dart-define, then process env (Cloud Agent / desktop secrets).
+Future<void> _seedOpenAiKeyFromEnvironment() async {
+  const defined = String.fromEnvironment('OPENAI_API_KEY');
+  var key = defined;
+  if (key.isEmpty && !kIsWeb) {
+    key = Platform.environment['OPENAI_API_KEY'] ?? '';
+  }
+  if (key.isEmpty) return;
+
+  final existing = await GameDatabase.instance.getSetting('openai_api_key');
+  if (existing == null || existing.isEmpty) {
+    await GameDatabase.instance.setSetting('openai_api_key', key);
+  }
 }
