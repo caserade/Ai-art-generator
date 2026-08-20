@@ -19,7 +19,8 @@ MCP tools: `design_game`, `generate_level`, `tune_physics`, `suggest_art_pipelin
 | Target | Guide |
 |--------|--------|
 | **Android phone** | [`INSTALL_ANDROID.md`](INSTALL_ANDROID.md) — APK sideload |
-| **Windows / Linux PC** | [`INSTALL_PC.md`](INSTALL_PC.md) — `flutter run -d windows` / `linux` |
+| **PC → phone (USB)** | [`INSTALL_PC_PHONE.md`](INSTALL_PC_PHONE.md) — `scripts\pc_to_phone.bat` |
+| **Windows / Linux PC** | [`INSTALL_PC.md`](INSTALL_PC.md) — `flutter run -d windows` |
 
 ## Modules
 
