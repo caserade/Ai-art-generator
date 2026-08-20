@@ -6,17 +6,23 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'app.dart';
+import 'platform/desktop_bootstrap.dart';
 import 'storage/database.dart';
 import 'storage/webp_compressor.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
-  ]);
+  // Native PC window (title, size, focus) — skipped on mobile/web.
+  await bootstrapDesktopWindow();
+
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
 
   if (kIsWeb) {
     await GameDatabase.instance.init(forceMemory: true);

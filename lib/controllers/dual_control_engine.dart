@@ -116,12 +116,109 @@ class DualControlEngine {
     _emit();
   }
 
+  // —— Keyboard (PC native) ——
+  // WASD / arrows move · Space / W / Up jump · J/Z = A · K/X = B · L/C = X · I/V = Y
+
+  bool _keyLeft = false;
+  bool _keyRight = false;
+  bool _keyUp = false;
+  bool _keyDown = false;
+  bool _keyJump = false; // Space / J / Z
+  bool _virtualStickActive = false;
+
+  /// Returns true when the key was consumed for gameplay.
+  bool handleKeyEvent(KeyEvent event) {
+    final isDown = event is KeyDownEvent || event is KeyRepeatEvent;
+    final isUp = event is KeyUpEvent;
+    if (!isDown && !isUp) return false;
+
+    final key = event.logicalKey;
+    var handled = false;
+
+    void setFlag(void Function(bool) assign) {
+      if (isDown) assign(true);
+      if (isUp) assign(false);
+      handled = true;
+    }
+
+    if (key == LogicalKeyboardKey.keyA ||
+        key == LogicalKeyboardKey.arrowLeft) {
+      setFlag((v) => _keyLeft = v);
+    } else if (key == LogicalKeyboardKey.keyD ||
+        key == LogicalKeyboardKey.arrowRight) {
+      setFlag((v) => _keyRight = v);
+    } else if (key == LogicalKeyboardKey.keyW ||
+        key == LogicalKeyboardKey.arrowUp) {
+      setFlag((v) => _keyUp = v);
+    } else if (key == LogicalKeyboardKey.keyS ||
+        key == LogicalKeyboardKey.arrowDown) {
+      setFlag((v) => _keyDown = v);
+    } else if (key == LogicalKeyboardKey.space ||
+        key == LogicalKeyboardKey.keyJ ||
+        key == LogicalKeyboardKey.keyZ) {
+      setFlag((v) => _keyJump = v);
+    } else if (key == LogicalKeyboardKey.keyK ||
+        key == LogicalKeyboardKey.keyX) {
+      pressButton(GamepadButton.b, pressed: isDown);
+      return true;
+    } else if (key == LogicalKeyboardKey.keyL ||
+        key == LogicalKeyboardKey.keyC) {
+      pressButton(GamepadButton.x, pressed: isDown);
+      return true;
+    } else if (key == LogicalKeyboardKey.keyI ||
+        key == LogicalKeyboardKey.keyV) {
+      pressButton(GamepadButton.y, pressed: isDown);
+      return true;
+    }
+
+    if (handled) {
+      _applyKeyboardAxes();
+      return true;
+    }
+    return false;
+  }
+
+  void _applyKeyboardAxes() {
+    final wantJump = _keyJump || _keyUp;
+    if (wantJump) {
+      state.pressed.add(GamepadButton.a);
+    } else {
+      state.pressed.remove(GamepadButton.a);
+    }
+
+    if (!_virtualStickActive) {
+      final x = (_keyRight ? 1.0 : 0.0) + (_keyLeft ? -1.0 : 0.0);
+      final y = (_keyDown ? 1.0 : 0.0) + (_keyUp ? -1.0 : 0.0);
+      state.leftX = x.clamp(-1.0, 1.0);
+      state.leftY = y.clamp(-1.0, 1.0);
+    }
+
+    void applyDpad(GamepadButton b, bool v) {
+      if (v) {
+        state.pressed.add(b);
+      } else {
+        state.pressed.remove(b);
+      }
+    }
+
+    applyDpad(GamepadButton.left, _keyLeft);
+    applyDpad(GamepadButton.right, _keyRight);
+    applyDpad(GamepadButton.up, _keyUp);
+    applyDpad(GamepadButton.down, _keyDown);
+    _emit();
+  }
+
   // —— Virtual overlay API ——
 
   void setLeftStick(double x, double y) {
+    _virtualStickActive = x.abs() > 0.05 || y.abs() > 0.05;
     state.leftX = x.clamp(-1.0, 1.0);
     state.leftY = y.clamp(-1.0, 1.0);
-    _emit();
+    if (!_virtualStickActive) {
+      _applyKeyboardAxes();
+    } else {
+      _emit();
+    }
   }
 
   void setRightStick(double x, double y) {
