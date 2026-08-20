@@ -16,6 +16,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Game Maker'), findsWidgets);
     expect(find.textContaining('Mobile Game Maker'), findsOneWidget);
+    expect(find.text('AI Brain'), findsOneWidget);
     expect(find.text('Art Scanner'), findsOneWidget);
     expect(find.text('Map Parser'), findsOneWidget);
     expect(find.text('Physics AI'), findsOneWidget);

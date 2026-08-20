@@ -5,6 +5,7 @@ import '../../models/game_models.dart';
 import '../../storage/database.dart';
 import '../../storage/webp_compressor.dart';
 import 'art_scanner_screen.dart';
+import 'brain_chat_screen.dart';
 import 'editor_screen.dart';
 import 'map_parser_screen.dart';
 import 'physics_engine_screen.dart';
@@ -65,6 +66,15 @@ class HomeScreen extends ConsumerWidget {
                     spacing: 10,
                     runSpacing: 10,
                     children: [
+                      _ToolChip(
+                        icon: Icons.psychology_alt_outlined,
+                        label: 'AI Brain',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const BrainChatScreen(),
+                          ),
+                        ),
+                      ),
                       _ToolChip(
                         icon: Icons.camera_alt_outlined,
                         label: 'Art Scanner',
@@ -238,14 +248,27 @@ class _HeroBanner extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Scan art, parse maps with Vision, tune physics, and play with dual controls — all on device.',
+            'Scan art, talk to Free Brain / OpenAI MCP, parse maps, tune physics, and play with dual controls — on device.',
             style: TextStyle(color: Colors.white70, height: 1.4),
           ),
           const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: onCreate,
-            icon: const Icon(Icons.rocket_launch_outlined),
-            label: const Text('Create game'),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              FilledButton.icon(
+                onPressed: onCreate,
+                icon: const Icon(Icons.rocket_launch_outlined),
+                label: const Text('Create game'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const BrainChatScreen()),
+                ),
+                icon: const Icon(Icons.psychology_alt_outlined),
+                label: const Text('Ask AI Brain'),
+              ),
+            ],
           ),
         ],
       ),

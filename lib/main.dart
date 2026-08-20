@@ -10,7 +10,6 @@ import 'storage/webp_compressor.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Prefer landscape for play; UI handles both orientations.
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.landscapeLeft,
@@ -28,6 +27,12 @@ Future<void> main() async {
       debugPrint('Storage init failed, memory fallback: $e\n$st');
       await GameDatabase.instance.init(forceMemory: true);
     }
+  }
+
+  // Optional cloud brain key from --dart-define=OPENAI_API_KEY=...
+  const envKey = String.fromEnvironment('OPENAI_API_KEY');
+  if (envKey.isNotEmpty) {
+    await GameDatabase.instance.setSetting('openai_api_key', envKey);
   }
 
   runApp(const GameMakerApp());
