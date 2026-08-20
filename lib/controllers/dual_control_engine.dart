@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:gamepads/gamepads.dart';
 
 import '../models/game_models.dart';
+import 'hid_availability_stub.dart'
+    if (dart.library.io) 'hid_availability_io.dart';
 
 /// Remappable logical ↔ physical button bindings.
 class ButtonRemapConfig {
@@ -75,6 +77,9 @@ class DualControlEngine {
   Stream<ControlState> get stream => _controller.stream;
 
   Future<void> start() async {
+    if (kIsWeb || !canUseHidGamepads) {
+      return;
+    }
     try {
       _pads = await Gamepads.list();
     } catch (_) {
@@ -83,7 +88,7 @@ class DualControlEngine {
     try {
       _padSub = Gamepads.events.listen(_onPadEvent);
     } catch (_) {
-      // Desktop/web may lack HID; virtual controls still work.
+      // Desktop may lack HID; keyboard + virtual controls still work.
     }
   }
 
