@@ -74,6 +74,15 @@
         background: rgba(0,0,0,0.35); color: var(--cream); padding: 0.65rem 0.75rem; font: inherit;
       }
       .portrait { width: 72px; height: 72px; object-fit: contain; display: block; margin: 0.4rem 0; }
+      .launcher { display: grid; gap: 0.5rem; margin-top: 0.5rem; }
+      .launcher a {
+        display: block; text-decoration: none; padding: 0.75rem 0.85rem;
+        border-radius: 12px; border: 1px solid rgba(57,255,20,0.3);
+        background: rgba(57,255,20,0.08); color: var(--cream);
+      }
+      .launcher a strong { display: block; color: var(--neon); font-size: 1rem; }
+      .launcher a span { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 0.15rem; }
+      .hint { font-size: 0.8rem; margin: 0.2rem 0 0; }
     </style>
   </head>
   <body>
@@ -82,6 +91,13 @@
       <h1>WWW GOSPEL COMMAND</h1>
       <img class="portrait" src="/gospel-kaiju.png" alt="Gospel Kaiju" />
       <p>Open this in your phone browser — no Play Store install. Gospel finds this phone, then you scan YOUR fingerprint. Gospel cannot see your operator seal.</p>
+
+      <div class="card">
+        <strong>Standalone modules</strong>
+        <p class="hint">These run on their own — no fingerprint, no unlock, and they keep working offline once loaded.</p>
+        <div class="launcher" id="launcher"></div>
+      </div>
+
       <div class="finger" aria-hidden="true">🔏</div>
       <p id="mode" class="status">Connecting to Gospel…</p>
       <button class="go" id="scan" disabled>Use fingerprint module</button>
@@ -99,6 +115,8 @@
             <option value="fingerprint-scan">fingerprint-scan</option>
             <option value="phone-find">phone-find</option>
             <option value="phonelink-bridge">phonelink-bridge</option>
+            <option value="art-scan">art-scan</option>
+            <option value="learning">learning</option>
           </select>
         </label>
         <label>Description
@@ -117,6 +135,7 @@
       const refreshBtn = document.getElementById('refresh')
       const installBtn = document.getElementById('install')
       const modsEl = document.getElementById('mods')
+      const launcherEl = document.getElementById('launcher')
       let deferredPrompt = null
 
       window.addEventListener('beforeinstallprompt', (event) => {
@@ -163,14 +182,38 @@
         if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status))
         return data
       }
+      function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, (c) => (
+          { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+        ))
+      }
+      function renderLauncher(modules) {
+        // Modules that expose a url are standalone apps with their own UI.
+        const launchable = modules.filter((m) => m.url)
+        if (!launchable.length) {
+          launcherEl.innerHTML = '<p class="hint">No standalone modules are installed on this Gospel.</p>'
+          return
+        }
+        launcherEl.innerHTML = launchable.map((m) => (
+          '<a class="go-module" href="' + escapeHtml(m.url) + '">' +
+          '<strong>' + escapeHtml(m.name) + '</strong>' +
+          '<span>' + escapeHtml(m.description) + '</span></a>'
+        )).join('')
+      }
       async function loadModules() {
         try {
           const data = await api('/api/modules')
-          modsEl.innerHTML = (data.modules || []).map((m) => (
-            '<li><strong>' + m.name + '</strong><span>' + m.kind + (m.builtin ? ' · built-in' : ' · uploaded') + ' — ' + m.description + '</span></li>'
-          )).join('')
+          const modules = data.modules || []
+          renderLauncher(modules)
+          modsEl.innerHTML = modules.map((m) => {
+            const origin = m.standalone ? ' · standalone' : (m.builtin ? ' · built-in' : ' · uploaded')
+            const label = '<strong>' + escapeHtml(m.name) + '</strong><span>' +
+              escapeHtml(m.kind) + origin + ' — ' + escapeHtml(m.description) + '</span>'
+            return '<li>' + (m.url ? '<a href="' + escapeHtml(m.url) + '">' + label + '</a>' : label) + '</li>'
+          }).join('')
         } catch (err) {
-          modsEl.innerHTML = '<li class="bad">' + (err.message || err) + '</li>'
+          launcherEl.innerHTML = '<p class="hint">Module list unavailable: ' + escapeHtml(err.message || err) + '</p>'
+          modsEl.innerHTML = '<li>' + escapeHtml(err.message || err) + '</li>'
         }
       }
       async function boot() {
@@ -180,12 +223,16 @@
           const state = await api('/api/state')
           const link = state.link && state.link.connected ? ' Phone Link connected.' : ''
           if (state.unlocked) {
-            setStatus('PC is unlocked. You can close WWW Gospel Command.' + link, 'ok')
+            setStatus('PC is unlocked. Art Scan and Learning above still work — they do not need the unlock.' + link, 'ok')
             scanBtn.disabled = true
             return
           }
           if (!secret) {
-            setStatus('Open Gospel’s pairing link so the secret is saved.' + link, 'bad')
+            // Enroll and unlock both require the secret, so stop here rather
+            // than letting the button fail later with a confusing error.
+            setStatus('Open Gospel’s pairing link so the secret is saved. The modules above work without it.' + link, 'bad')
+            scanBtn.disabled = true
+            return
           }
           if (!window.isSecureContext) {
             setStatus('Fingerprint needs HTTPS or http://localhost (not a plain LAN IP).' + link, 'bad')
