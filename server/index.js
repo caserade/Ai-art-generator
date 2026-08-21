@@ -10,6 +10,8 @@ import {
   listModules,
 } from './state.js'
 import { issueChallenge, verifyEnroll, verifyUnlock, getRpId } from './webauthn.js'
+import { createModuleRouter, moduleSummary } from '../modules/host.js'
+import { MODULES, MODULE_MOUNT, mountPathFor } from '../modules/registry.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const publicDir = path.join(__dirname, '..', 'public')
@@ -19,6 +21,17 @@ const appName = 'WWW Gospel Command'
 const app = express()
 app.set('trust proxy', true)
 app.use(cors())
+
+/**
+ * Modules mount first, and deliberately before the main app's body parser and
+ * before any unlock check. Art Scan and Learning are standalone apps that
+ * happen to be reachable from here; they must keep working whether or not a
+ * phone is enrolled and whether or not the PC is unlocked.
+ */
+for (const descriptor of MODULES) {
+  app.use(`${MODULE_MOUNT}/${descriptor.id}`, createModuleRouter(descriptor))
+}
+
 app.use(express.json({ limit: '1mb' }))
 app.use(express.static(publicDir))
 
@@ -62,12 +75,19 @@ app.get('/api/bridge', (req, res) => {
     tunnelUrl,
     pairingHint: `${tunnelUrl}/?s=…`,
     appName,
+    modules: MODULES.map((m) => ({
+      id: m.id,
+      name: m.name,
+      url: `${tunnelUrl.replace(/\/$/, '')}${mountPathFor(m.id)}`,
+      standalone: true,
+    })),
   })
 })
 
 app.get('/api/modules', (_req, res) => {
   const state = loadState()
-  res.json({ ok: true, modules: listModules(state) })
+  const standalone = MODULES.map((m) => moduleSummary(m, mountPathFor(m.id)))
+  res.json({ ok: true, modules: [...standalone, ...listModules(state)] })
 })
 
 app.post('/api/modules', (req, res) => {
@@ -175,7 +195,26 @@ app.get(['/', '/phone'], (_req, res) => {
 })
 
 app.use((req, res) => {
-  res.status(404).json({ ok: false, message: 'Not found' })
+  const message = `Not found: ${req.path}`
+  if (req.accepts('html') && !req.path.startsWith('/api/')) {
+    // A mistyped URL on a phone used to return raw JSON. Hand back the module
+    // links instead so there is a way out without retyping anything.
+    const links = MODULES.map(
+      (m) => `<li><a href="${mountPathFor(m.id)}">${m.name}</a> — ${m.description}</li>`,
+    ).join('')
+    res
+      .status(404)
+      .type('html')
+      .send(
+        `<!doctype html><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />` +
+          `<title>Not found — ${appName}</title>` +
+          `<body style="font-family:system-ui;background:#0b0d0c;color:#e8f0e4;padding:1.5rem;line-height:1.5">` +
+          `<h1 style="color:#39ff14;font-size:1.3rem">Not found</h1><p style="color:#8aa08a">${message}</p>` +
+          `<ul>${links}<li><a href="/">${appName}</a></li></ul></body>`,
+      )
+    return
+  }
+  res.status(404).json({ ok: false, message })
 })
 
 export function createApp() {

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0d0c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Learning" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icon.png" />
+    <link rel="stylesheet" href="gospel.css" />
+    <title>Gospel Learning</title>
+    <style>
+      .thread {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+      .turn {
+        border-radius: 12px;
+        padding: 0.65rem 0.75rem;
+        font-size: 0.9rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .turn.you {
+        align-self: flex-end;
+        max-width: 85%;
+        background: rgba(57, 255, 20, 0.14);
+        border: 1px solid var(--line);
+        color: var(--cream);
+      }
+      .turn.brain {
+        align-self: flex-start;
+        max-width: 92%;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(232, 240, 228, 0.12);
+        color: var(--cream);
+      }
+      .turn .tag {
+        display: block;
+        font-size: 0.65rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--halo);
+        margin-bottom: 0.3rem;
+      }
+      .rate {
+        display: flex;
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+      }
+      .rate button {
+        width: auto;
+        flex: none;
+        margin: 0;
+        min-height: 0;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        border-radius: 999px;
+        background: transparent;
+        border: 1px solid rgba(232, 240, 228, 0.2);
+        color: var(--muted);
+      }
+      .map {
+        font-family: ui-monospace, "Cascadia Mono", Menlo, monospace;
+        font-size: 0.72rem;
+        line-height: 1.15;
+        letter-spacing: 0.12em;
+        color: var(--neon);
+        margin-top: 0.5rem;
+        overflow-x: auto;
+        white-space: pre;
+      }
+      .compose {
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-end;
+      }
+      .compose textarea {
+        flex: 1;
+        resize: none;
+      }
+      .compose button {
+        width: auto;
+        flex: none;
+        margin: 0;
+        padding: 0.75rem 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="kicker">Standalone module</p>
+      <h1>LEARNING</h1>
+      <p>
+        Free Brain designs games, levels and physics on this device — and remembers what you teach
+        it. No PC, no API key, no fingerprint unlock.
+      </p>
+      <p id="status" class="status busy">Waking the brain…</p>
+
+      <div class="card">
+        <h2>Ask</h2>
+        <div class="thread" id="thread"></div>
+        <div class="chips" id="chips"></div>
+        <label for="message">Message</label>
+        <div class="compose">
+          <textarea id="message" rows="2" placeholder="make a floaty gem-hunt platformer"></textarea>
+          <button class="go" id="send">Send</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Teach it something</h2>
+        <p>
+          Teach a phrase and its answer. From then on that phrase is answered from memory instead of
+          the heuristics — and it survives a restart.
+        </p>
+        <label>
+          When I say
+          <input id="trigger" placeholder="our art style" />
+        </label>
+        <label>
+          Answer with
+          <textarea id="response" rows="2" placeholder="Neon green on near-black, 128px sprites."></textarea>
+        </label>
+        <button class="go" id="teach">Teach</button>
+      </div>
+
+      <div class="card">
+        <h2>What it has learned</h2>
+        <p id="memorySummary">Nothing yet.</p>
+        <ul class="list" id="lessons"></ul>
+        <button class="ghost" id="refresh">Refresh memory</button>
+      </div>
+
+      <nav class="nav" id="nav" hidden>
+        <a href="../art-scan/">Art Scan</a>
+        <a href="../../">Gospel Command</a>
+      </nav>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
