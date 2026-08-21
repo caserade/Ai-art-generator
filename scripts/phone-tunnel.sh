@@ -90,7 +90,22 @@ if [[ "$code" != "400" ]]; then
   exit 1
 fi
 
+printf '%s\n' "${url}/m/art-scan/" >"$GOSPEL_DATA_DIR/art-scan.url"
+printf '%s\n' "${url}/m/learning/" >"$GOSPEL_DATA_DIR/learning.url"
+
+# Smoke: the standalone modules must answer without any enrollment or unlock.
+for mod in art-scan learning; do
+  mod_code="$(curl -sS -o /dev/null -w '%{http_code}' "${url}/m/${mod}/api/health")"
+  if [[ "$mod_code" != "200" ]]; then
+    echo "Module smoke failed: /m/${mod}/api/health returned $mod_code" >&2
+    exit 1
+  fi
+done
+
 echo "Gosple / WWW Gospel Command (hardened) is up."
-echo "Phone pairing URL:"
+echo "Phone pairing URL (fingerprint unlock):"
 echo "  $pairing"
+echo "Standalone modules — no pairing, no unlock, open these directly on the phone:"
+echo "  ${url}/m/art-scan/"
+echo "  ${url}/m/learning/"
 echo "Old insecure trycloudflare backends should be abandoned; use this URL on the phone."

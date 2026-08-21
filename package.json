@@ -1,11 +1,14 @@
 {
   "name": "gospel-kaiju",
   "version": "1.0.0",
-  "description": "WWW Gospel Command — phone fingerprint unlock bridge with hardened WebAuthn",
+  "description": "WWW Gospel Command — phone fingerprint unlock bridge with hardened WebAuthn, plus standalone Art Scan and Learning modules",
   "type": "module",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
+    "start:modules": "node modules/serve.js all",
+    "start:art-scan": "node modules/serve.js art-scan",
+    "start:learning": "node modules/serve.js learning",
     "test": "node --test tests/*.test.js",
     "install:cloud": "npm ci"
   },
