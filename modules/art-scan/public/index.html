@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0d0c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Art Scan" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icon.png" />
+    <link rel="stylesheet" href="gospel.css" />
+    <title>Gospel Art Scan</title>
+    <style>
+      .frames {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+      }
+      .frames figure {
+        margin: 0;
+        text-align: center;
+      }
+      .frames figcaption {
+        font-size: 0.65rem;
+        color: var(--muted);
+        margin-top: 0.2rem;
+      }
+      .frames canvas {
+        width: 100%;
+      }
+      .play {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+      .play canvas {
+        width: 112px;
+        height: 112px;
+        flex: none;
+      }
+      .meta {
+        font-size: 0.78rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .meta b {
+        color: var(--cream);
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="kicker">Standalone module</p>
+      <h1>ART SCAN</h1>
+      <p>
+        Photograph a sketch on a plain background. Everything runs on this phone — no PC, no
+        fingerprint unlock, works offline once loaded.
+      </p>
+      <p id="status" class="status busy">Starting Art Scan…</p>
+
+      <input id="file" type="file" accept="image/*" capture="environment" />
+      <button class="file-btn" id="pick">Scan artwork with camera</button>
+      <button class="ghost" id="pickGallery">Choose from gallery</button>
+      <input id="fileGallery" type="file" accept="image/*" />
+
+      <div class="card" id="editor" hidden>
+        <h2>Sprite preview</h2>
+        <div class="play">
+          <canvas id="anim" width="128" height="128" aria-label="Animated sprite preview"></canvas>
+          <div class="meta" id="meta"></div>
+        </div>
+        <div class="frames" id="frames"></div>
+
+        <label>
+          Background threshold — <span id="thresholdValue">42</span>
+          <input id="threshold" type="range" min="0" max="160" step="1" value="42" />
+        </label>
+        <label>
+          Frame size
+          <select id="frameSize">
+            <option value="64">64 px</option>
+            <option value="96">96 px</option>
+            <option value="128" selected>128 px</option>
+            <option value="192">192 px</option>
+          </select>
+        </label>
+        <label>
+          Sprite name
+          <input id="name" placeholder="Hero" />
+        </label>
+        <button class="go" id="save">Save sprite to library</button>
+        <button class="ghost" id="discard">Discard</button>
+      </div>
+
+      <div class="card">
+        <h2>Sprite library</h2>
+        <p id="libraryHint">Saved sprites live in this module's own storage.</p>
+        <ul class="list" id="library"></ul>
+        <button class="ghost" id="reload">Refresh library</button>
+      </div>
+
+      <nav class="nav" id="nav" hidden>
+        <a href="../learning/">Learning</a>
+        <a href="../../">Gospel Command</a>
+      </nav>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
