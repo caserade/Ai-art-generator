@@ -153,6 +153,28 @@ describe('intent routing', () => {
     assert.match(think('').text, /Tell me the game/)
   })
 
+  test('excluding a tool falls through to the next interpretation', () => {
+    assert.equal(routeIntent('sprite palette').tool, 'suggest_art_pipeline')
+    assert.equal(
+      routeIntent('sprite palette', { exclude: ['suggest_art_pipeline'] }).tool,
+      'explain_mechanics',
+    )
+    // "generate a hazard map" matches the level rule first, then physics-free
+    // wording sends it to the general explainer.
+    assert.equal(routeIntent('generate a hazard map').tool, 'generate_level')
+    assert.equal(
+      routeIntent('generate a hazard map', { exclude: ['generate_level', 'design_game'] }).tool,
+      'explain_mechanics',
+    )
+  })
+
+  test('still answers when every tool has been rejected', () => {
+    const route = routeIntent('sprite palette', {
+      exclude: [...TOOL_NAMES],
+    })
+    assert.equal(route.tool, 'explain_mechanics', 'never refuses to answer')
+  })
+
   test('the art tool points at the Art Scan module', () => {
     const result = invokeTool('suggest_art_pipeline', { character: 'giant boss sketch' })
     assert.equal(result.data.module, 'art-scan')
@@ -233,11 +255,25 @@ describe('learning memory', () => {
     assert.equal(freshMemory('retrain').routePreference('sprite colors'), 'explain_mechanics')
   })
 
-  test('a single stray rating does not rewire routing', () => {
+  test('a single stray rating does not promote a tool', () => {
     const mem = freshMemory('margin')
     const turn = mem.recordInteraction({ message: 'gravity tuning', tool: 'tune_physics' })
     mem.reinforce({ interactionId: turn.id, helpful: true })
     assert.equal(mem.routePreference('gravity tuning'), null, 'one vote is below the margin')
+  })
+
+  test('one rejection demotes a tool for that phrase, and a thumbs-up undoes it', () => {
+    const mem = freshMemory('demote')
+    assert.deepEqual(mem.demotedTools('sprite palette'), [])
+
+    const first = mem.recordInteraction({ message: 'sprite palette', tool: 'suggest_art_pipeline' })
+    mem.reinforce({ interactionId: first.id, helpful: false })
+    assert.deepEqual(mem.demotedTools('sprite palette'), ['suggest_art_pipeline'])
+    assert.deepEqual(freshMemory('demote').demotedTools('sprite palette'), ['suggest_art_pipeline'])
+
+    const second = mem.recordInteraction({ message: 'sprite palette', tool: 'suggest_art_pipeline' })
+    mem.reinforce({ interactionId: second.id, helpful: true })
+    assert.deepEqual(mem.demotedTools('sprite palette'), [], 'approval clears the demotion')
   })
 
   test('rejects feedback for an unknown interaction', () => {
@@ -302,29 +338,50 @@ describe('Learning API (standalone, no Gospel state)', () => {
     assert.equal(asked.body.summary.recalled, 1)
   })
 
-  test('feedback changes which tool a phrase routes to', async () => {
+  test('rejecting an answer reroutes that phrase next time', async () => {
+    // What the phone's "Not what I meant" button sends: no preferred tool.
     const first = await json('/api/ask', {
       method: 'POST',
-      body: JSON.stringify({ message: 'sprite palette' }),
+      body: JSON.stringify({ message: 'character outline' }),
     })
     assert.equal(first.body.tool, 'suggest_art_pipeline')
     assert.equal(first.body.trainedRouting, false)
 
     const rated = await json('/api/feedback', {
       method: 'POST',
-      body: JSON.stringify({
-        interactionId: first.body.interactionId,
-        helpful: false,
-        preferTool: 'explain_mechanics',
-      }),
+      body: JSON.stringify({ interactionId: first.body.interactionId, helpful: false }),
     })
     assert.equal(rated.status, 200)
 
     const second = await json('/api/ask', {
       method: 'POST',
+      body: JSON.stringify({ message: 'character outline' }),
+    })
+    assert.equal(second.body.tool, 'explain_mechanics', 'the rejected tool was skipped')
+    assert.equal(second.body.trainedRouting, true)
+  })
+
+  test('an explicit preferred tool is promoted for that phrase', async () => {
+    const first = await json('/api/ask', {
+      method: 'POST',
       body: JSON.stringify({ message: 'sprite palette' }),
     })
-    assert.equal(second.body.tool, 'explain_mechanics', 'routing was retrained')
+    assert.equal(first.body.tool, 'suggest_art_pipeline')
+
+    await json('/api/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        interactionId: first.body.interactionId,
+        helpful: false,
+        preferTool: 'tune_physics',
+      }),
+    })
+
+    const second = await json('/api/ask', {
+      method: 'POST',
+      body: JSON.stringify({ message: 'sprite palette' }),
+    })
+    assert.equal(second.body.tool, 'tune_physics', 'routing was retrained to the chosen tool')
     assert.equal(second.body.trainedRouting, true)
   })
 

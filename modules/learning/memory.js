@@ -24,7 +24,12 @@ const STOPWORDS = new Set([
 const MAX_LESSONS = 500
 const MAX_INTERACTIONS = 100
 const RECALL_THRESHOLD = 0.5
+// Promoting a tool over the heuristics needs a clear lead, so one stray tap
+// cannot rewire routing. Demoting is a direct statement about this phrase
+// ("not what I meant"), so it takes effect on the first tap and is undone by a
+// single thumbs-up.
 const ROUTE_MARGIN = 2
+const DEMOTE_AT = -1
 
 export const MEMORY_DEFAULTS = {
   lessons: [],
@@ -172,6 +177,17 @@ export function createMemory(store) {
     return ranked[0][0]
   }
 
+  /** Tools the user has rejected for this phrase, so routing skips them. */
+  function demotedTools(message) {
+    const key = signature(message)
+    if (!key) return []
+    const weights = read().routes[key]
+    if (!weights) return []
+    return Object.entries(weights)
+      .filter(([, weight]) => weight <= DEMOTE_AT)
+      .map(([tool]) => tool)
+  }
+
   function recordInteraction({ message, tool, source }) {
     const interaction = {
       id: newId('turn'),
@@ -239,6 +255,7 @@ export function createMemory(store) {
     recall,
     markRecalled,
     routePreference,
+    demotedTools,
     recordInteraction,
     reinforce,
     summary,

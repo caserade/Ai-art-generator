@@ -77,24 +77,35 @@ function api(router) {
         return
       }
 
-      // 2. Otherwise Free Brain, with routing you have trained taking priority.
+      // 2. Otherwise Free Brain, with the routing you have trained applied on
+      //    top: promoted tools win outright, rejected ones are skipped.
+      const untrained = routeIntent(message)
       const preferred = mem.routePreference(message)
-      const route = routeIntent(message)
-      const tool = preferred || route?.tool
+      const demoted = mem.demotedTools(message)
+
       let reply
-      if (preferred && preferred !== route?.tool) {
-        const result = invokeTool(preferred, { ...(route?.args || {}), prompt: message, question: message })
+      if (preferred) {
+        const result = invokeTool(preferred, {
+          ...(untrained?.args || {}),
+          prompt: message,
+          question: message,
+          description: message,
+        })
         reply = { source: 'free-brain', tool: preferred, text: result.message, result }
       } else {
-        reply = think(message, { physics: req.body?.physics })
+        reply = think(message, { physics: req.body?.physics, exclude: demoted })
       }
 
-      const interaction = mem.recordInteraction({ message, tool, source: reply.source })
+      const interaction = mem.recordInteraction({
+        message,
+        tool: reply.tool,
+        source: reply.source,
+      })
       res.json({
         ok: true,
         source: reply.source,
-        tool: reply.tool || tool,
-        trainedRouting: Boolean(preferred && preferred !== route?.tool),
+        tool: reply.tool,
+        trainedRouting: Boolean(reply.tool && untrained && reply.tool !== untrained.tool),
         interactionId: interaction.id,
         text: reply.text,
         result: withRows(reply.result),

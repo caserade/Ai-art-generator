@@ -439,49 +439,79 @@ function toolExplain({ question = '', physics }) {
   }
 }
 
-/** Pick the tool a free-text message should route to. */
-export function routeIntent(message) {
+/**
+ * Ordered routing rules. Order matters: the first match wins, so excluding a
+ * tool makes the message fall through to the next best interpretation.
+ */
+const ROUTING_RULES = [
+  {
+    tool: 'design_game',
+    test: (lower, wordCount) =>
+      wordCount >= 6 ||
+      matches(lower, [
+        'design',
+        'make a game',
+        'create a game',
+        'build me',
+        'new game',
+        'platformer',
+        'metroidvania',
+        'roguelike',
+      ]),
+    args: (text) => ({ prompt: text, name: guessTitle(text) }),
+  },
+  {
+    tool: 'generate_level',
+    test: (lower) => matches(lower, ['level', 'map', 'stage', 'generate map', 'new map']),
+    args: (text, lower) => ({
+      prompt: text,
+      style: inferLevelStyle(lower),
+      difficulty: inferDifficulty(lower),
+    }),
+  },
+  {
+    tool: 'tune_physics',
+    test: (lower) =>
+      matches(lower, ['physics', 'gravity', 'feel', 'floaty', 'tight', 'controls', 'icy', 'moon']),
+    args: (text) => ({ description: text }),
+  },
+  {
+    tool: 'suggest_art_pipeline',
+    test: (lower) => matches(lower, ['art', 'sprite', 'character', 'scan', 'draw']),
+    args: (text) => ({ character: text }),
+  },
+]
+
+const FALLBACK_TOOL = 'explain_mechanics'
+
+/**
+ * Pick the tool a free-text message should route to.
+ *
+ * `exclude` lists tools the user has told us are wrong for this phrase, so the
+ * message falls through to the next rule instead.
+ */
+export function routeIntent(message, { exclude = [] } = {}) {
   const text = String(message || '').trim()
   if (!text) return null
   const lower = text.toLowerCase()
   const wordCount = text.split(/\s+/).filter(Boolean).length
 
-  if (
-    wordCount >= 6 ||
-    matches(lower, [
-      'design',
-      'make a game',
-      'create a game',
-      'build me',
-      'new game',
-      'platformer',
-      'metroidvania',
-      'roguelike',
-    ])
-  ) {
-    return { tool: 'design_game', args: { prompt: text, name: guessTitle(text) } }
-  }
-  if (matches(lower, ['level', 'map', 'stage', 'generate map', 'new map'])) {
-    return {
-      tool: 'generate_level',
-      args: { prompt: text, style: inferLevelStyle(lower), difficulty: inferDifficulty(lower) },
+  for (const rule of ROUTING_RULES) {
+    if (exclude.includes(rule.tool)) continue
+    if (rule.test(lower, wordCount)) {
+      return { tool: rule.tool, args: rule.args(text, lower) }
     }
   }
-  if (matches(lower, ['physics', 'gravity', 'feel', 'floaty', 'tight', 'controls', 'icy', 'moon'])) {
-    return { tool: 'tune_physics', args: { description: text } }
-  }
-  if (matches(lower, ['art', 'sprite', 'character', 'scan', 'draw'])) {
-    return { tool: 'suggest_art_pipeline', args: { character: text } }
-  }
-  return { tool: 'explain_mechanics', args: { question: text } }
+  // Always answer with something, even if every tool has been demoted.
+  return { tool: FALLBACK_TOOL, args: { question: text } }
 }
 
 /**
  * Answer a free-text message with Free Brain alone (no learned memory).
- * `think()` in the router layers persistent learning on top of this.
+ * The router layers persistent learning on top of this.
  */
-export function think(message, { physics } = {}) {
-  const route = routeIntent(message)
+export function think(message, { physics, exclude = [] } = {}) {
+  const route = routeIntent(message, { exclude })
   if (!route) {
     return {
       ok: true,
